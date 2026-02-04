@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AllerScan - Menu Allergen Scanner</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-search"></i>
+                    <i class="fas fa-allergies"></i>
+                </div>
+                <div>
+                    <h1>AllerScan</h1>
+                    <p>Menu Allergen Scanner</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span class="badge badge-offline">
+                    <i class="fas fa-wifi-slash"></i>
+                    Works Offline
+                </span>
+                <button class="btn btn-primary" onclick="saveResults()">
+                    <i class="fas fa-history"></i> History
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-grid">
+        <!-- Left Column - Scanner & Controls -->
+        <div class="scanner-section">
+            <!-- Scanner Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-camera"></i>
+                    <h2>Scan Menu</h2>
+                </div>
+                
+                <!-- Scanner Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" id="cameraTab" onclick="switchTab('camera')">
+                        <i class="fas fa-video"></i> Camera
+                    </button>
+                    <button class="tab-btn" id="uploadTab" onclick="switchTab('upload')">
+                        <i class="fas fa-upload"></i> Upload Photo
+                    </button>
+                </div>
+                
+                <!-- Camera Section -->
+                <div class="tab-content active" id="cameraContent">
+                    <div class="camera-container">
+                        <div class="camera-view" id="cameraView">
+                            <video id="video" autoplay playsinline></video>
+                            <div class="camera-placeholder" id="cameraPlaceholder">
+                                <i class="fas fa-camera"></i>
+                                <p>Camera preview</p>
+                                <small>Point at menu and scan</small>
+                            </div>
+                            <div class="scanning-line" id="scanningLine"></div>
+                        </div>
+                        
+                        <div class="camera-controls">
+                            <button class="btn btn-large btn-primary" id="startCamera">
+                                <i class="fas fa-video"></i> Start Camera
+                            </button>
+                            <button class="btn btn-large btn-success" id="captureBtn" style="display: none;">
+                                <i class="fas fa-search"></i> Scan Now
+                            </button>
+                            <button class="btn btn-large btn-secondary" id="stopCamera" style="display: none;">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Upload Section -->
+                <div class="tab-content" id="uploadContent">
+                    <div class="upload-container">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Upload Menu Photo</h3>
+                            <p>Drag & drop or click to browse</p>
+                            <p class="upload-formats">JPG, PNG, WebP up to 5MB</p>
+                            <input type="file" id="fileInput" accept="image/*" capture="environment">
+                            <div class="upload-preview" id="uploadPreview">
+                                <!-- Preview will appear here -->
+                            </div>
+                        </div>
+                        
+                        <div class="upload-controls">
+                            <button class="btn btn-large btn-success" id="scanUploadBtn">
+                                <i class="fas fa-search"></i> Scan Uploaded Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Loading State -->
+                <div class="loading" id="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Scanning menu...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <small id="progressText">Initializing OCR engine...</small>
+                </div>
+            </div>
+
+            <!-- Allergen Settings Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-allergies"></i>
+                    <h2>Your Allergens</h2>
+                </div>
+                
+                <div class="allergen-section">
+                    <div class="allergen-input-group">
+                        <input type="text" id="allergenInput" 
+                               placeholder="Type allergen (e.g., nuts, dairy)">
+                        <button class="btn btn-primary" id="addAllergen">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    
+                    <div class="quick-allergens">
+                        <span class="quick-title">Common allergens:</span>
+                        <div class="quick-buttons">
+                            <button class="tag" data-allergen="nuts">🌰 Nuts</button>
+                            <button class="tag" data-allergen="dairy">🥛 Dairy</button>
+                            <button class="tag" data-allergen="gluten">🌾 Gluten</button>
+                            <button class="tag" data-allergen="shellfish">🦐 Shellfish</button>
+                            <button class="tag" data-allergen="eggs">🥚 Eggs</button>
+                            <button class="tag" data-allergen="soy">🌱 Soy</button>
+                        </div>
+                    </div>
+                    
+                    <div class="selected-allergens" id="selectedAllergens">
+                        <!-- Allergen tags will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo Menus Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-utensils"></i>
+                    <h2>Try Demo Menus</h2>
+                </div>
+                
+                <div class="demo-menus">
+                    <div class="demo-menu" onclick="loadDemoMenu(1)">
+                        <div class="demo-icon">
+                            <i class="fas fa-coffee"></i>
+                        </div>
+                        <div class="demo-info">
+                            <h4>Cafe Menu</h4>
+                            <p>Contains nuts, dairy</p>
+                        </div>
+                    </div>
+                    <div class="demo-menu" onclick="loadDemoMenu(2)">
+                        <div class="demo-icon">
+                            <i class="fas fa-pizza-slice"></i>
+                        </div>
+                        <div class="demo-info">
+                            <h4>Italian Restaurant</h4>
+                            <p>Contains gluten, shellfish</p>
+                        </div>
+                    </div>
+                    <div class="demo-menu" onclick="loadDemoMenu(3)">
+                        <div class="demo-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="demo-info">
+                            <h4>Healthy Cafe</h4>
+                            <p>Contains soy, celery</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Results -->
+        <div class="results-section">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i>
+                    <h2>Scan Results</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-sm" onclick="clearResults()">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="results-container" id="resultsContainer">
+                    <!-- Initial state -->
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h3>No Scan Results Yet</h3>
+                        <p>Scan a menu or try a demo menu</p>
+                        <div class="empty-tips">
+                            <div class="tip">
+                                <i class="fas fa-camera"></i>
+                                <span>Use camera or upload photo</span>
+                            </div>
+                            <div class="tip">
+                                <i class="fas fa-list"></i>
+                                <span>Add your allergens above</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results will be displayed here -->
+                    <div class="scan-results" id="scanResults" style="display: none;">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Card -->
+            <div class="card stats-card">
+                <h3>Scan Statistics</h3>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalScans">0</div>
+                            <div class="stat-label">Total Scans</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="allergensFound">0</div>
+                            <div class="stat-label">Allergens Found</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="avgTime">0s</div>
+                            <div class="stat-label">Avg Scan Time</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- How It Works -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h2>How It Works</h2>
+                </div>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Capture or Upload</h4>
+                            <p>Use camera or upload menu photo</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>AI Text Recognition</h4>
+                            <p>Extracts text using Tesseract.js OCR</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Allergen Detection</h4>
+                            <p>Highlights allergens in real-time</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="privacy-note">
+                    <i class="fas fa-lock"></i>
+                    <div>
+                        <strong>100% Private:</strong> All processing happens in your browser. 
+                        No data is sent to servers.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>AllerScan</h3>
+                    <p>Your AI-powered menu safety companion</p>
+                </div>
+                <div class="footer-tech">
+                    <span class="tech-tag">
+                        <i class="fab fa-html5"></i> HTML5
+                    </span>
+                    <span class="tech-tag">
+                        <i class="fab fa-css3-alt"></i> CSS3
+                    </span>
+                    <span class="tech-tag">
+                        <i class="fab fa-js"></i> JavaScript
+                    </span>
+                    <span class="tech-tag">
+                        <i class="fas fa-camera"></i> Camera API
+                    </span>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Built for Hackathon 2024 • No Backend Required • Works Completely Offline</p>
+                <p class="footer-note">
+                    <i class="fas fa-code"></i> 
+                    Made with ❤️ using pure HTML, CSS & JavaScript
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Hidden Canvas for Image Processing -->
+    <canvas id="canvas" style="display: none;"></canvas>
+    
+    <!-- Tesseract.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
